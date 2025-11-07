@@ -34,7 +34,7 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'email-already-in-use':
-          throw 'This email is already registered. Please sign in instead.';
+          throw 'EMAIL_IN_USE: This email is already registered. Please sign in instead.';
         case 'weak-password':
           throw 'Password is too weak. Please use at least 6 characters.';
         case 'invalid-email':
@@ -69,9 +69,11 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'user-not-found':
-          throw 'No account found with this email. Please sign up first.';
+          throw 'USER_NOT_FOUND: No account found with this email. Please sign up first.';
         case 'wrong-password':
-          throw 'Incorrect password. Please try again or reset your password.';
+          throw 'WRONG_PASSWORD: Incorrect password. Please try again or reset your password.';
+        case 'invalid-credential':
+          throw 'INVALID_CREDENTIAL: Don\'t have an account? Sign up now or check your password if you already have one.';
         case 'invalid-email':
           throw 'Please enter a valid email address.';
         case 'user-disabled':
@@ -79,7 +81,7 @@ class AuthService {
         case 'too-many-requests':
           throw 'Too many failed attempts. Please try again later.';
         default:
-          throw 'Sign in failed: ${e.message}';
+          throw 'INVALID_CREDENTIAL: ${e.message}';
       }
     } catch (e) {
       if (e.toString().contains('verify your email')) {

@@ -285,7 +285,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _showErrorDialog(BuildContext context, String error) {
-    bool isEmailInUse = error.contains('already registered');
+    bool isEmailInUse = error.contains('EMAIL_IN_USE');
+    
+    String displayMessage = error;
+    if (error.contains('EMAIL_IN_USE:')) {
+      displayMessage = error.split('EMAIL_IN_USE: ')[1];
+    }
     
     showDialog(
       context: context,
@@ -294,10 +299,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           children: [
             Icon(Icons.error_outline, color: Colors.red.shade600),
             const SizedBox(width: 8),
-            const Text('Sign Up Error'),
+            Text(isEmailInUse ? 'Email Already Registered' : 'Sign Up Error'),
           ],
         ),
-        content: Text(error),
+        content: Text(displayMessage),
         actions: [
           if (isEmailInUse) ...[
             TextButton(

@@ -228,8 +228,18 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showErrorDialog(BuildContext context, String error) {
-    bool isUserNotFound = error.contains('No account found');
-    bool isWrongPassword = error.contains('Incorrect password');
+    bool isUserNotFound = error.contains('USER_NOT_FOUND');
+    bool isWrongPassword = error.contains('WRONG_PASSWORD');
+    bool isInvalidCredential = error.contains('INVALID_CREDENTIAL');
+    
+    String displayMessage = error;
+    if (error.contains('USER_NOT_FOUND:')) {
+      displayMessage = error.split('USER_NOT_FOUND: ')[1];
+    } else if (error.contains('WRONG_PASSWORD:')) {
+      displayMessage = error.split('WRONG_PASSWORD: ')[1];
+    } else if (error.contains('INVALID_CREDENTIAL:')) {
+      displayMessage = error.split('INVALID_CREDENTIAL: ')[1];
+    }
     
     showDialog(
       context: context,
@@ -238,10 +248,12 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Icon(Icons.error_outline, color: Colors.red.shade600),
             const SizedBox(width: 8),
-            const Text('Sign In Error'),
+            Text(isUserNotFound ? 'Account Not Found' : 
+                 isWrongPassword ? 'Wrong Password' : 
+                 isInvalidCredential ? 'Don\'t Have an Account?' : 'Sign In Error'),
           ],
         ),
-        content: Text(error),
+        content: Text(displayMessage),
         actions: [
           if (isUserNotFound) ...[
             TextButton(
@@ -277,6 +289,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 foregroundColor: Colors.white,
               ),
               child: const Text('Reset Password'),
+            ),
+          ] else if (isInvalidCredential) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Sign Up Now'),
             ),
           ] else ...[
             TextButton(
