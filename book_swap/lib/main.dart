@@ -6,7 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/book_provider.dart';
 import 'providers/swap_provider.dart';
 import 'providers/chat_provider.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/auth/welcome_screen.dart';
 import 'screens/home/main_screen.dart';
 
 void main() async {
@@ -44,15 +44,7 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            if (authProvider.isAuthenticated) {
-              return const MainScreen();
-            } else {
-              return const LoginScreen();
-            }
-          },
-        ),
+        home: const WelcomeScreen(),
       ),
     );
   }

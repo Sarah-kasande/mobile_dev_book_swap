@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   UserModel? _user;
-  bool _isLoading = false;
+  bool _isLoading = true; // Start with loading true
   String? _error;
 
   UserModel? get user => _user;
@@ -21,6 +21,7 @@ class AuthProvider with ChangeNotifier {
       } else {
         _user = null;
       }
+      _isLoading = false; // Set loading to false after auth state is determined
       notifyListeners();
     });
   }
