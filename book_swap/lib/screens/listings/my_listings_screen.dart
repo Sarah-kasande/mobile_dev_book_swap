@@ -32,7 +32,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text(
           'My Books',
@@ -62,11 +62,17 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddBookScreen()),
           );
+          
+          // Refresh books if a book was added
+          if (result == true && mounted) {
+            final bookProvider = Provider.of<BookProvider>(context, listen: false);
+            await bookProvider.refreshAllBooks();
+          }
         },
         backgroundColor: Colors.blue.shade600,
         child: const Icon(Icons.add, color: Colors.white),

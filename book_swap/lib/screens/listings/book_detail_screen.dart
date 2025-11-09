@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import '../../models/book_model.dart';
 import '../../models/swap_model.dart';
 import '../../providers/auth_provider.dart';
@@ -44,39 +45,7 @@ class BookDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: book.imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: book.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey.shade200,
-                            child: Icon(
-                              Icons.book,
-                              color: Colors.grey.shade400,
-                              size: 64,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.book,
-                          color: Colors.grey.shade400,
-                          size: 64,
-                        ),
-                      ),
+                child: _buildBookImage(book),
               ),
             ),
             
@@ -275,6 +244,44 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildBookImage(BookModel book) {
+    if (book.imageBase64 != null && book.imageBase64!.isNotEmpty) {
+      try {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            base64Decode(book.imageBase64!),
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              print('Error displaying book detail image: $error');
+              return _buildDefaultContainer();
+            },
+          ),
+        );
+      } catch (e) {
+        print('Error decoding book detail image: $e');
+        return _buildDefaultContainer();
+      }
+    }
+    return _buildDefaultContainer();
+  }
+
+  Widget _buildDefaultContainer() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        Icons.menu_book_rounded,
+        color: Colors.grey.shade400,
+        size: 64,
+      ),
+    );
+  }
+
   Color _getConditionColor(BookCondition condition) {
     switch (condition) {
       case BookCondition.newBook:
@@ -333,7 +340,7 @@ class BookDetailScreen extends StatelessWidget {
     SwapModel swap = SwapModel(
       id: '',
       requesterId: authProvider.user!.uid,
-      requesterName: authProvider.user!.displayName,
+      requesterName: authProvider.user!.displayName ?? authProvider.user!.email ?? 'Unknown User',
       ownerId: book.ownerId,
       ownerName: book.ownerName,
       bookId: book.id,

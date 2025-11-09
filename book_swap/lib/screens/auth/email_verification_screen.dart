@@ -75,7 +75,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               const SizedBox(height: 24),
               
               Text(
-                'Please check your email and click the verification link to activate your account.',
+                'Please check your email and click the verification link to activate your account. After verification, return here to sign in.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey.shade600,
                 ),
@@ -112,7 +112,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               
               const SizedBox(height: 16),
               
-              // Back to Login Button
+              // Sign In Button
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
@@ -122,8 +122,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFFFBBF24),
+                  foregroundColor: Color(0xFF1E293B),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -131,7 +131,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   elevation: 2,
                 ),
                 child: const Text(
-                  'Back to Login',
+                  'Continue to Sign In',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

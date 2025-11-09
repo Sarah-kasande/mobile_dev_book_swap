@@ -273,9 +273,16 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       
       if (success && mounted) {
-        Navigator.pushReplacement(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainScreen()),
+          (route) => false,
         );
       }
     }
@@ -285,6 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isUserNotFound = error.contains('USER_NOT_FOUND');
     bool isWrongPassword = error.contains('WRONG_PASSWORD');
     bool isInvalidCredential = error.contains('INVALID_CREDENTIAL');
+    bool isEmailNotVerified = error.contains('verify your email');
     
     String displayMessage = error;
     if (error.contains('USER_NOT_FOUND:')) {
@@ -304,12 +312,45 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(width: 8),
             Text(isUserNotFound ? 'Account Not Found' : 
                  isWrongPassword ? 'Wrong Password' : 
-                 isInvalidCredential ? 'Don\'t Have an Account?' : 'Sign In Error'),
+                 isInvalidCredential ? 'Don\'t Have an Account?' : 
+                 isEmailNotVerified ? 'Email Not Verified' : 'Sign In Error'),
           ],
         ),
         content: Text(displayMessage),
         actions: [
-          if (isUserNotFound) ...[
+          if (isEmailNotVerified) ...[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  final authProvider = Provider.of<auth.AuthProvider>(context, listen: false);
+                  await authProvider.sendEmailVerification();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Verification email sent! Please check your email.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error sending verification email'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Resend Verification'),
+            ),
+          ] else if (isUserNotFound) ...[
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),

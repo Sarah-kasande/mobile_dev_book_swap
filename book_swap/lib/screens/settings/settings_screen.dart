@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/book_provider.dart';
+import '../../services/sample_data_service.dart';
 import '../auth/login_screen.dart';
+import '../help/help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -246,6 +249,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 
+                const SizedBox(height: 24),
+                
+                // Developer Options Section
+                Text(
+                  'Developer Options',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.library_books,
+                          color: Colors.green.shade600,
+                        ),
+                        title: const Text('Add Sample Books'),
+                        subtitle: const Text('Populate database with sample books and images'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _addSampleBooks,
+                      ),
+                      
+                      const Divider(height: 1),
+                      
+                      ListTile(
+                        leading: Icon(
+                          Icons.book,
+                          color: Colors.purple.shade600,
+                        ),
+                        title: const Text('Add Basic Books'),
+                        subtitle: const Text('Add books without images (simpler)'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _addBasicBooks,
+                      ),
+                      
+                      const Divider(height: 1),
+                      
+                      ListTile(
+                        leading: Icon(
+                          Icons.add_box,
+                          color: Colors.blue.shade600,
+                        ),
+                        title: const Text('Add More Books'),
+                        subtitle: const Text('Add additional sample books'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _addAdditionalBooks,
+                      ),
+                    ],
+                  ),
+                ),
+                
                 const SizedBox(height: 32),
                 
                 // Sign Out Button
@@ -301,24 +365,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: const Text(
-          'Need help? Here are some quick tips:\n\n'
-          '• Browse books in the Browse tab\n'
-          '• Add your books in My Books tab\n'
-          '• Manage swap offers in the Swap Offers section\n'
-          '• Chat with other users after accepting swaps\n\n'
-          'For more support, contact us at support@bookswap.com',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HelpScreen(),
       ),
     );
   }
@@ -342,6 +392,147 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _addBasicBooks() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Adding basic books...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await SampleDataService.addBasicSampleBooks();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Refresh book list
+        final bookProvider = Provider.of<BookProvider>(context, listen: false);
+        await bookProvider.refreshAllBooks();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Basic books added successfully!'),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding basic books: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _addSampleBooks() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Adding sample books...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await SampleDataService.addSampleBooks();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Refresh book list
+        final bookProvider = Provider.of<BookProvider>(context, listen: false);
+        await bookProvider.refreshAllBooks();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Sample books added successfully!'),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding sample books: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _addAdditionalBooks() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Adding additional books...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await SampleDataService.addAdditionalBooks();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Refresh book list
+        final bookProvider = Provider.of<BookProvider>(context, listen: false);
+        await bookProvider.refreshAllBooks();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Additional books added successfully!'),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding additional books: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _signOut() async {

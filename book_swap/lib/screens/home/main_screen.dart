@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart' as app_auth;
 import '../../providers/book_provider.dart';
 import '../../providers/swap_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../listings/browse_listings_screen.dart';
 import '../listings/my_listings_screen.dart';
+import '../swap/swap_offers_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -27,13 +28,14 @@ class _MainScreenState extends State<MainScreen> {
     _screens = [
       const BrowseListingsScreen(),
       const MyListingsScreen(),
+      const SwapOffersScreen(),
       const ChatListScreen(),
       const SettingsScreen(),
     ];
     
     // Initialize providers
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
       final bookProvider = Provider.of<BookProvider>(context, listen: false);
       final swapProvider = Provider.of<SwapProvider>(context, listen: false);
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
@@ -94,6 +96,11 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.library_books_outlined),
               activeIcon: Icon(Icons.library_books),
               label: 'My Books',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_horiz_outlined),
+              activeIcon: Icon(Icons.swap_horiz),
+              label: 'Swaps',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),

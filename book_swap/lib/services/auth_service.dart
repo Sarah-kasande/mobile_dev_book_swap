@@ -57,14 +57,16 @@ class AuthService {
       
       User? user = result.user;
       if (user != null) {
-        if (!user.emailVerified) {
-          throw 'Please verify your email before signing in';
-        }
+        // Create a simple UserModel from Firebase user
+        UserModel userModel = UserModel(
+          uid: user.uid,
+          email: user.email ?? email,
+          displayName: user.displayName ?? 'User',
+          emailVerified: user.emailVerified,
+          createdAt: DateTime.now(),
+        );
         
-        DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          return UserModel.fromMap(doc.data() as Map<String, dynamic>);
-        }
+        return userModel;
       }
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
@@ -76,17 +78,10 @@ class AuthService {
           throw 'INVALID_CREDENTIAL: Don\'t have an account? Sign up now or check your password if you already have one.';
         case 'invalid-email':
           throw 'Please enter a valid email address.';
-        case 'user-disabled':
-          throw 'This account has been disabled. Please contact support.';
-        case 'too-many-requests':
-          throw 'Too many failed attempts. Please try again later.';
         default:
           throw 'INVALID_CREDENTIAL: ${e.message}';
       }
     } catch (e) {
-      if (e.toString().contains('verify your email')) {
-        rethrow;
-      }
       throw 'An unexpected error occurred. Please try again.';
     }
     return null;
@@ -106,10 +101,13 @@ class AuthService {
   Future<UserModel?> getCurrentUserData() async {
     User? user = _auth.currentUser;
     if (user != null) {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        return UserModel.fromMap(doc.data() as Map<String, dynamic>);
-      }
+      return UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? 'User',
+        emailVerified: user.emailVerified,
+        createdAt: DateTime.now(),
+      );
     }
     return null;
   }

@@ -17,11 +17,18 @@ class AuthProvider with ChangeNotifier {
   AuthProvider() {
     _authService.authStateChanges.listen((User? firebaseUser) async {
       if (firebaseUser != null && firebaseUser.emailVerified) {
+        // Only allow login with verified email
         _user = await _authService.getCurrentUserData();
+        print('AuthProvider: User logged in - ${_user?.email}, verified: ${firebaseUser.emailVerified}');
       } else {
         _user = null;
+        if (firebaseUser != null && !firebaseUser.emailVerified) {
+          print('AuthProvider: User email not verified');
+        } else {
+          print('AuthProvider: User logged out');
+        }
       }
-      _isLoading = false; // Set loading to false after auth state is determined
+      _isLoading = false;
       notifyListeners();
     });
   }
@@ -55,9 +62,11 @@ class AuthProvider with ChangeNotifier {
       if (user != null) {
         _user = user;
         _setLoading(false);
+        notifyListeners();
         return true;
       }
       _setLoading(false);
+      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();

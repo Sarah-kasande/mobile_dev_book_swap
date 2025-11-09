@@ -6,6 +6,7 @@ class BookModel {
   final String author;
   final BookCondition condition;
   final String? imageUrl;
+  final String? imageBase64;
   final String ownerId;
   final String ownerName;
   final DateTime createdAt;
@@ -17,6 +18,7 @@ class BookModel {
     required this.author,
     required this.condition,
     this.imageUrl,
+    this.imageBase64,
     required this.ownerId,
     required this.ownerName,
     required this.createdAt,
@@ -30,6 +32,7 @@ class BookModel {
       author: map['author'] ?? '',
       condition: BookCondition.values[map['condition'] ?? 0],
       imageUrl: map['imageUrl'],
+      imageBase64: map['imageBase64'],
       ownerId: map['ownerId'] ?? '',
       ownerName: map['ownerName'] ?? '',
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
@@ -43,6 +46,7 @@ class BookModel {
       'author': author,
       'condition': condition.index,
       'imageUrl': imageUrl,
+      'imageBase64': imageBase64,
       'ownerId': ownerId,
       'ownerName': ownerName,
       'createdAt': createdAt.millisecondsSinceEpoch,

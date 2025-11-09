@@ -6,6 +6,7 @@ import '../../providers/swap_provider.dart';
 import '../../models/book_model.dart';
 import '../../models/swap_model.dart';
 import '../../widgets/book_card.dart';
+import '../../services/sample_data_service.dart';
 import 'book_detail_screen.dart';
 
 class BrowseListingsScreen extends StatefulWidget {
@@ -20,9 +21,20 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
   BookCondition? _selectedCondition;
 
   @override
+  void initState() {
+    super.initState();
+    // Load books when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bookProvider = Provider.of<BookProvider>(context, listen: false);
+      bookProvider.listenToAllBooks();
+      bookProvider.refreshAllBooks(); // Also try direct fetch
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text(
           'Browse Books',
@@ -34,6 +46,13 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
         backgroundColor: Colors.blue.shade600,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              final bookProvider = Provider.of<BookProvider>(context, listen: false);
+              bookProvider.refreshAllBooks();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: _showFilterDialog,
@@ -90,12 +109,21 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
           Expanded(
             child: Consumer<BookProvider>(
               builder: (context, bookProvider, child) {
+                // Debug: Print the number of books
+                print('Total books loaded: ${bookProvider.allBooks.length}');
+                
                 List<BookModel> filteredBooks = bookProvider.allBooks.where((book) {
                   final matchesSearch = book.title.toLowerCase().contains(_searchQuery) ||
                       book.author.toLowerCase().contains(_searchQuery);
                   final matchesCondition = _selectedCondition == null || book.condition == _selectedCondition;
                   return matchesSearch && matchesCondition;
                 }).toList();
+
+                if (bookProvider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
 
                 if (filteredBooks.isEmpty) {
                   return Center(
@@ -109,7 +137,7 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No books found',
+                          bookProvider.allBooks.isEmpty ? 'No books available yet' : 'No books found',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -118,10 +146,13 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Try adjusting your search or filters',
+                          bookProvider.allBooks.isEmpty 
+                            ? 'Get started by adding some sample books using the button below!' 
+                            : 'Try adjusting your search or filters',
                           style: TextStyle(
                             color: Colors.grey.shade500,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -153,7 +184,69 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
           ),
         ],
       ),
+      floatingActionButton: Consumer<BookProvider>(
+        builder: (context, bookProvider, child) {
+          // Only show the FAB when there are no books
+          if (bookProvider.allBooks.isEmpty && !bookProvider.isLoading) {
+            return FloatingActionButton.extended(
+              onPressed: _addSampleBooks,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Sample Books'),
+              backgroundColor: Colors.blue.shade600,
+              foregroundColor: Colors.white,
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
     );
+  }
+
+  Future<void> _addSampleBooks() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Adding sample books...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await SampleDataService.addSampleBooks();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Refresh book list
+        final bookProvider = Provider.of<BookProvider>(context, listen: false);
+        await bookProvider.refreshAllBooks();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Sample books added successfully! Check them out below.'),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding sample books: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _showFilterDialog() {
@@ -261,6 +354,7 @@ class _BrowseListingsScreenState extends State<BrowseListingsScreen> {
 
     Navigator.pop(context);
     
+    print('Attempting to create swap for book: ${book.title} (${book.id})');
     bool success = await swapProvider.createSwapOffer(swap);
     
     if (success && mounted) {

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../../providers/book_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/book_model.dart';
 
 class EditBookScreen extends StatefulWidget {
@@ -20,8 +23,8 @@ class _EditBookScreenState extends State<EditBookScreen> {
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late BookCondition _selectedCondition;
-  File? _selectedImage;
-  final ImagePicker _picker = ImagePicker();
+  String _imageBase64 = '';
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
     _titleController = TextEditingController(text: widget.book.title);
     _authorController = TextEditingController(text: widget.book.author);
     _selectedCondition = widget.book.condition;
+    _imageBase64 = widget.book.imageBase64 ?? '';
   }
 
   @override
@@ -76,64 +80,17 @@ class _EditBookScreenState extends State<EditBookScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: _selectedImage != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _selectedImage!,
-                                fit: BoxFit.cover,
-                              ),
+                      child: _isUploading
+                          ? const Center(
+                              child: CircularProgressIndicator(),
                             )
-                          : widget.book.imageUrl != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl: widget.book.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
-                                      color: Colors.grey.shade200,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) => Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.add_photo_alternate_outlined,
-                                          size: 48,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Tap to change cover',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                          : _imageBase64.isNotEmpty
+                              ? Image.memory(
+                                  base64Decode(_imageBase64),
+                                  height: 120,
+                                  fit: BoxFit.cover,
                                 )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.add_photo_alternate_outlined,
-                                      size: 48,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tap to add book cover',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              : const Icon(Icons.book, size: 80),
                     ),
                   ),
                   
@@ -251,46 +208,66 @@ class _EditBookScreenState extends State<EditBookScreen> {
   }
 
   Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    setState(() => _isUploading = true);
+
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 80,
-      );
-      
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
+      String base64Image;
+
+      if (kIsWeb) {
+        // Web: Read directly
+        final bytes = await picked.readAsBytes();
+        base64Image = base64Encode(bytes);
+      } else {
+        // Mobile: Compress before encoding
+        final file = File(picked.path);
+        final compressed = await FlutterImageCompress.compressAndGetFile(
+          file.path,
+          '${file.path}_compressed.jpg',
+          quality: 70,
+          minWidth: 800,
+          minHeight: 800,
+        );
+        base64Image = base64Encode(await compressed!.readAsBytes());
       }
+
+      setState(() {
+        _imageBase64 = base64Image;
+        _isUploading = false;
+      });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking image: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image upload failed')),
+        );
+      }
+      setState(() => _isUploading = false);
     }
   }
 
   Future<void> _updateBook() async {
     if (_formKey.currentState!.validate()) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final bookProvider = Provider.of<BookProvider>(context, listen: false);
+      
+      if (authProvider.user == null) return;
 
       BookModel updatedBook = BookModel(
         id: widget.book.id,
         title: _titleController.text.trim(),
         author: _authorController.text.trim(),
         condition: _selectedCondition,
-        imageUrl: widget.book.imageUrl,
+        imageBase64: _imageBase64.isNotEmpty ? _imageBase64 : null,
         ownerId: widget.book.ownerId,
         ownerName: widget.book.ownerName,
         createdAt: widget.book.createdAt,
         isAvailable: widget.book.isAvailable,
       );
 
-      bool success = await bookProvider.updateBook(widget.book.id, updatedBook, _selectedImage);
+      bool success = await bookProvider.updateBook(widget.book.id, updatedBook, null);
       
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -299,7 +276,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

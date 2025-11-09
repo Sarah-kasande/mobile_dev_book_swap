@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/swap_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -31,31 +32,89 @@ class _SwapOffersScreenState extends State<SwapOffersScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          color: Colors.blue.shade600,
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: const [
-              Tab(text: 'Received'),
-              Tab(text: 'Sent'),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text(
+          'Swap Offers',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildReceivedOffersTab(),
-              _buildSentOffersTab(),
-            ],
-          ),
+        backgroundColor: Colors.blue.shade600,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(text: 'Received'),
+            Tab(text: 'Sent'),
+          ],
         ),
-      ],
+      ),
+      body: Column(
+        children: [
+          // Debug info
+          Consumer2<SwapProvider, AuthProvider>(
+            builder: (context, swapProvider, authProvider, child) {
+              return Container(
+                padding: const EdgeInsets.all(8),
+                color: Colors.grey.shade100,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text('Received: ${swapProvider.receivedSwaps.length}'),
+                        Text('Sent: ${swapProvider.userSwaps.length}'),
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () {
+                            if (authProvider.user != null) {
+                              print('Refreshing swaps for user: ${authProvider.user!.uid}');
+                              swapProvider.listenToUserSwaps(authProvider.user!.uid);
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.clear_all),
+                          onPressed: () async {
+                            if (authProvider.user != null) {
+                              await _clearOldSwaps(authProvider.user!.uid);
+                            }
+                          },
+                          tooltip: 'Clear old swaps',
+                        ),
+                      ],
+                    ),
+                    if (swapProvider.error != null)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Colors.red.shade100,
+                        child: Text(
+                          'Error: ${swapProvider.error}',
+                          style: TextStyle(color: Colors.red.shade800, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildReceivedOffersTab(),
+                _buildSentOffersTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -361,6 +420,43 @@ class _SwapOffersScreenState extends State<SwapOffersScreen> with SingleTickerPr
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _clearOldSwaps(String userId) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      
+      // Get all rejected/completed swaps for this user
+      QuerySnapshot oldSwaps = await firestore
+          .collection('swaps')
+          .where('requesterId', isEqualTo: userId)
+          .where('status', whereIn: [SwapStatus.rejected.index, SwapStatus.completed.index])
+          .get();
+      
+      for (var doc in oldSwaps.docs) {
+        await doc.reference.delete();
+        print('Cleared old swap: ${doc.id}');
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cleared ${oldSwaps.docs.length} old swaps'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error clearing old swaps: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing old swaps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

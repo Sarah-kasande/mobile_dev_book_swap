@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'providers/auth_provider.dart';
+import 'providers/auth_provider.dart' as app_auth;
 import 'providers/book_provider.dart';
 import 'providers/swap_provider.dart';
 import 'providers/chat_provider.dart';
 import 'screens/auth/welcome_screen.dart';
+import 'screens/auth/email_verification_screen.dart';
 import 'screens/home/main_screen.dart';
 
 void main() async {
@@ -24,7 +26,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => app_auth.AuthProvider()),
         ChangeNotifierProvider(create: (_) => BookProvider()),
         ChangeNotifierProvider(create: (_) => SwapProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
@@ -44,7 +46,28 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: const WelcomeScreen(),
+        home: Consumer<app_auth.AuthProvider>(
+          builder: (context, authProvider, child) {
+            if (authProvider.isLoading) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
+            if (authProvider.isAuthenticated) {
+              return const MainScreen();
+            } else {
+              // Check if user exists but email not verified
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser != null && !currentUser.emailVerified) {
+                return EmailVerificationScreen(email: currentUser.email ?? '');
+              }
+              return const WelcomeScreen();
+            }
+          },
+        ),
       ),
     );
   }

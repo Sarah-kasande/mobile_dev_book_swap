@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
 import '../models/book_model.dart';
 
 class BookCard extends StatelessWidget {
@@ -24,55 +24,65 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.blue.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.blue.shade100,
+          width: 1,
+        ),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Book Image
               Container(
                 width: 80,
                 height: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.blue.shade100,
+                      Colors.blue.shade200,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.2),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: book.imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: book.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey.shade200,
-                            child: Icon(
-                              Icons.book,
-                              color: Colors.grey.shade400,
-                              size: 32,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        Icons.book,
-                        color: Colors.grey.shade400,
-                        size: 32,
-                      ),
+                child: _buildBookImage(),
               ),
               
               const SizedBox(width: 16),
@@ -108,21 +118,30 @@ class BookCard extends StatelessWidget {
                     
                     // Condition Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _getConditionColor(book.condition).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _getConditionColor(book.condition),
-                          width: 1,
+                        gradient: LinearGradient(
+                          colors: [
+                            _getConditionColor(book.condition).withOpacity(0.8),
+                            _getConditionColor(book.condition),
+                          ],
                         ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getConditionColor(book.condition).withOpacity(0.3),
+                            spreadRadius: 1,
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       child: Text(
                         book.conditionString,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _getConditionColor(book.condition),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -163,42 +182,157 @@ class BookCard extends StatelessWidget {
               Column(
                 children: [
                   if (showSwapButton && book.isAvailable)
-                    ElevatedButton(
-                      onPressed: onSwapPressed,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade500, Colors.blue.shade700],
                         ),
-                        minimumSize: const Size(0, 32),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.3),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Text(
-                        'Swap',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      child: ElevatedButton(
+                        onPressed: onSwapPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          minimumSize: const Size(0, 32),
+                        ),
+                        child: const Text(
+                          'Swap',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   
                   if (showEditButton) ...[
-                    IconButton(
-                      onPressed: onEditPressed,
-                      icon: Icon(Icons.edit, color: Colors.blue.shade600),
-                      iconSize: 20,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        onPressed: onEditPressed,
+                        icon: Icon(Icons.edit_rounded, color: Colors.blue.shade600),
+                        iconSize: 18,
+                        tooltip: 'Edit Book',
+                      ),
                     ),
-                    IconButton(
-                      onPressed: onDeletePressed,
-                      icon: Icon(Icons.delete, color: Colors.red.shade600),
-                      iconSize: 20,
+                    const SizedBox(height: 4),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        onPressed: onDeletePressed,
+                        icon: Icon(Icons.delete_rounded, color: Colors.red.shade600),
+                        iconSize: 18,
+                        tooltip: 'Delete Book',
+                      ),
                     ),
                   ],
                 ],
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+
+
+  Widget _buildBookImage() {
+    // Display base64 image if available
+    if (book.imageBase64 != null && book.imageBase64!.isNotEmpty) {
+      try {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            base64Decode(book.imageBase64!),
+            width: 80,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholder();
+            },
+          ),
+        );
+      } catch (e) {
+        return _buildPlaceholder();
+      }
+    }
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _getColorFromTitle(book.title).withOpacity(0.8),
+            _getColorFromTitle(book.title),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.menu_book_rounded,
+            color: Colors.white,
+            size: 32,
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              book.title.length > 15 ? book.title.substring(0, 15) + '...' : book.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getColorFromTitle(String title) {
+    final colors = [
+      Colors.blue.shade600,
+      Colors.green.shade600,
+      Colors.purple.shade600,
+      Colors.orange.shade600,
+      Colors.red.shade600,
+      Colors.teal.shade600,
+      Colors.indigo.shade600,
+      Colors.brown.shade600,
+    ];
+    
+    final hash = title.hashCode;
+    return colors[hash.abs() % colors.length];
   }
 
   Color _getConditionColor(BookCondition condition) {
